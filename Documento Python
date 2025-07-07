@@ -85,7 +85,7 @@ class PasteleriaApp(tk.Tk):
 if __name__ == "__main__":
   # ————————— PASO A MODIFICAR —————————
   # Sustituye esta ruta por la ubicación de tu .accdb:
-  DB_PATH = r"C:\Users\jeqc1\OneDrive\Documentos\basedatos_pasteleria.accdb"
+  DB_PATH = r"C:\Users\jeqc1\OneDrive\Documentos\GRUPITOO"
   # ————————————————————————————————
   app = PasteleriaApp(DB_PATH)
   app.mainloop()
