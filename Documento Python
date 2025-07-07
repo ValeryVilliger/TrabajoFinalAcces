@@ -1,0 +1,91 @@
+# app.py
+
+import pyodbc
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
+class PasteleriaApp(tk.Tk):
+  def __init__(self, db_path):
+    super().__init__()
+    self.title("Gestión Pastelería — Access")
+    self.geometry("800x600")
+    # 1) Conectar a la base de datos
+    self.conn = pyodbc.connect(
+      r"Driver={Microsoft Access Driver (*.mdb, *.accdb)};"
+      fr"DBQ={db_path};"
+    )
+    self._build_ui()
+  def _build_ui(self):
+
+    # fila de botones
+    frame = ttk.Frame(self)
+    frame.pack(fill=tk.X, pady=5, padx=5)
+    ttk.Button(frame, text="1. Listar Clientes",  command=self.list_clients).pack(side=tk.LEFT, padx=5)
+    ttk.Button(frame, text="2. Listar Productos",  command=self.list_products).pack(side=tk.LEFT, padx=5)
+    ttk.Button(frame, text="3. Pedidos por Cliente",command=self.orders_by_customer).pack(side=tk.LEFT, padx=5)
+    ttk.Button(frame, text="4. Insertar Cliente",  command=self.insert_customer).pack(side=tk.LEFT, padx=5)
+
+    # área de texto para resultados
+    self.text = tk.Text(self, wrap="none")
+    self.text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+  def _run_query(self, sql, params=None):
+    cur = self.conn.cursor()
+    if params:
+      cur.execute(sql, params)
+    else:
+      cur.execute(sql)
+    cols = [c[0] for c in cur.description] if cur.description else []
+    rows = cur.fetchall()
+    return cols, rows
+  def _display(self, cols, rows):
+    self.text.delete("1.0", tk.END)
+    if not cols:
+      self.text.insert(tk.END, "¡Operación finalizada con éxito!\n")
+      return
+    self.text.insert(tk.END, " | ".join(cols) + "\n")
+    self.text.insert(tk.END, "-" * 80 + "\n")
+    for r in rows:
+      self.text.insert(tk.END, " | ".join(str(v) for v in r) + "\n")
+
+  # Consulta 1: todos los clientes
+  def list_clients(self):
+    sql = "SELECT CustomerID, Name, Email FROM Clientes"
+    cols, rows = self._run_query(sql)
+    self._display(cols, rows)
+
+  # Consulta 2: todos los productos
+  def list_products(self):
+    sql = "SELECT ProductID, ProductName, Price FROM Productos"
+    cols, rows = self._run_query(sql)
+    self._display(cols, rows)
+
+  # Consulta 3: pedidos filtrados por cliente
+
+  def orders_by_customer(self):
+    cid = simpledialog.askinteger("Pedidos por Cliente", "Introduce CustomerID:")
+    if cid is None:
+      return
+    sql = "SELECT OrderID, OrderDate FROM Pedidos WHERE CustomerID = ?"
+    cols, rows = self._run_query(sql, (cid,))
+    self._display(cols, rows)
+
+  # Inserción: añadir un nuevo cliente
+  def insert_customer(self):
+    name = simpledialog.askstring("Nuevo Cliente", "Nombre completo:")
+    email = simpledialog.askstring("Nuevo Cliente", "Email:")
+    if not name or not email:
+      return
+    try:
+      cur = self.conn.cursor()
+      cur.execute("INSERT INTO Clientes (Name, Email) VALUES (?, ?)", (name, email))
+      self.conn.commit()
+      messagebox.showinfo("Éxito", "Cliente insertado correctamente.")
+    except Exception as e:
+      messagebox.showerror("Error al insertar", str(e))
+
+if __name__ == "__main__":
+  # ————————— PASO A MODIFICAR —————————
+  # Sustituye esta ruta por la ubicación de tu .accdb:
+  DB_PATH = r"C:\Users\jeqc1\OneDrive\Documentos\basedatos_pasteleria.accdb"
+  # ————————————————————————————————
+  app = PasteleriaApp(DB_PATH)
+  app.mainloop()
